@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Messages;
 use Illuminate\Http\Request;
+use JWTAuth;
+use App\User;
+use App\HeaderChat;
 
 class MessageController extends Controller
 {
@@ -12,6 +15,58 @@ class MessageController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
+    public function conversationResponse(Request $request){
+        $user = JWTAuth::parseToken()->authenticate();
+        $messages = HeaderChat::find($request->id_header)->messages;
+        $conversation = [];
+        foreach ($messages as $item) {
+            $own = $user->id === $item->sent_by ?
+                   true:false;
+            $object= [
+                'own'=>$own,
+                'message'=>$item->message,
+                'created_at'=>$item->created_at,
+                'id'=> $item->id,
+            ];
+
+            array_push($conversation,$object);
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $conversation,
+        ]);
+    }
+
+    public function sentMensaje(Request $request){
+        $user = JWTAuth::parseToken()->authenticate();
+        $chat = HeaderChat::find($request->idChatHeader);
+        $message = [
+            'message'=>$request->plainMessage,
+            'sent_by'=>$user->id,
+        ];
+        try{
+            $chat->messages()->create($message);
+            $response = [
+                'success'=>true,
+                'data' => $message,
+            ];
+        }catch(Illuminate\Database\QueryExeption $e){
+            $response = [
+                'success'=> false,
+                'error'=>$e->getMessage(),
+            ];
+        }catch(Exception $e){
+            $response = [
+                'success'=> false,
+                'error'=>$e->getMessage(),
+            ];
+        }
+
+
+        return response()->json($response);
+    }
+
     public function index()
     {
         //

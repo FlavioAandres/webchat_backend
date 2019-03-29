@@ -61,8 +61,11 @@ class HeaderChatController extends Controller
                       ->orWhere('created_with',$user->id)->get();
         $allheaders = [];
         foreach($headers as $head){
-            $name = ($user !== $other = User::find($head->created_by))
-                    ? $other->name:$user->name;
+            if($user === $other = User::find($head->created_with)   ){
+                $name = $user->name;
+            }else{
+                $name = $other->name;
+            }
             $avatar ='http://lorempixel.com/40/40/';
             $last_message = $head->messages()->orderBy('id','desc')->first();
             $id_header = $head->id;
@@ -70,7 +73,7 @@ class HeaderChatController extends Controller
             $object = [
                 'name' =>$name,
                 'avatar' => $avatar,
-                'last_message' => $last_message,
+                'last_message' => $last_message->message,
                 'id_header' => $id_header,
             ];
           array_push($allheaders,$object);
