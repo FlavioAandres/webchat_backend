@@ -20,13 +20,32 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
     Route::post('/chat/headers/','HeaderChatController@headersResponse');
 
+    Route::post('/search/users',function(Request $request){
+        $users =  DB::table('users')->where('name','like',"%$request->userLike%")->get();
+
+        $collection = [];
+        foreach ($users as $item) {
+            // return response()->json(['users'=>$users]);
+            $obj = [
+                'name' => $item->name,
+                'id' => $item->id, 
+            ];
+            array_push($collection,$obj);
+        }
+
+        $response = [
+            'success'=>true,
+            'data' => $collection,
+        ];
+
+        return response()->json($response);
+    });
+
 
     Route::post('/chat/user/header/', 'MessageController@conversationResponse');
 
 
-    Route::post('/chat/message/send/', function(Request $request){
-
-    });
+    Route::post('/chat/message/send/', 'MessageController@sendMessage');
 
     Route::post('/chat/create', function(Request $request){
         $user = JWTAuth::parseToken()->authenticate();

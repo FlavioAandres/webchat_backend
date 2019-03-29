@@ -19,7 +19,6 @@ class UserController extends Controller
                 return response()->json([
                     'response'=>'error',
                     'message' => 'this credentials are wrong',
-                    'token'=>$token,
                 ]);
             }
         }catch(JWTAuthExeption $e){
@@ -50,6 +49,7 @@ class UserController extends Controller
                     'auth_token'=>$user->auth_token,
                     'name'=>$user->name,
                     'email'=>$user->email,
+                    'avatar'=>'http://lorempixel.com/50/50',
                 ],
             ];
         }else{

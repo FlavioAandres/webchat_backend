@@ -16,6 +16,10 @@ class MessageController extends Controller
      * @return \Illuminate\Http\Response
      */
 
+    private function createObjectMessage($message){
+
+    }
+
     public function conversationResponse(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
         $messages = HeaderChat::find($request->id_header)->messages;
@@ -38,8 +42,9 @@ class MessageController extends Controller
         ]);
     }
 
-    public function sentMensaje(Request $request){
+    public function sendMessage(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
+        // dd($request->idChatHeader);
         $chat = HeaderChat::find($request->idChatHeader);
         $message = [
             'message'=>$request->plainMessage,
@@ -47,9 +52,24 @@ class MessageController extends Controller
         ];
         try{
             $chat->messages()->create($message);
+            $conversation = [];
+            $object = [];
+            foreach ($chat->messages as $item) {
+                $own = $user->id === $item->sent_by ?
+                       true:false;
+                $object= [
+                    'own'=>$own,
+                    'message'=>$item->message,
+                    'created_at'=>$item->created_at,
+                    'id'=> $item->id,
+                ];
+
+                array_push($conversation,$object);
+            }
+
             $response = [
                 'success'=>true,
-                'data' => $message,
+                'data' => $conversation,
             ];
         }catch(Illuminate\Database\QueryExeption $e){
             $response = [

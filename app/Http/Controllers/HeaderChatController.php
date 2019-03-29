@@ -61,10 +61,11 @@ class HeaderChatController extends Controller
                       ->orWhere('created_with',$user->id)->get();
         $allheaders = [];
         foreach($headers as $head){
-            if($user === $other = User::find($head->created_with)   ){
-                $name = $user->name;
-            }else{
-                $name = $other->name;
+            # If user starting session is the message owner
+            if($user->id == $head->created_by){
+                $name = User::find($head->created_with)->name;
+            }elseif($user->id == $head->created_with){
+                $name = User::find($head->created_by)->name;
             }
             $avatar ='http://lorempixel.com/40/40/';
             $last_message = $head->messages()->orderBy('id','desc')->first();
