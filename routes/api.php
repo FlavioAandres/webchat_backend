@@ -28,7 +28,7 @@ Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
             // return response()->json(['users'=>$users]);
             $obj = [
                 'name' => $item->name,
-                'id' => $item->id, 
+                'id' => $item->id,
             ];
             array_push($collection,$obj);
         }
@@ -47,38 +47,7 @@ Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
 
     Route::post('/chat/message/send/', 'MessageController@sendMessage');
 
-    Route::post('/chat/create', function(Request $request){
-        $user = JWTAuth::parseToken()->authenticate();
-        $next_user = App\User::find($request->idUserToTalk);
-        // return response()->json(['next_user'=>$next_user,'user'=>$user]);
-        if(!is_null($user) && !is_null($next_user->email)){
-            $payload = [
-                'created_by'=>$user->id,
-                'created_with'=>$next_user->id,
-            ];
-            try{
-                $chat = App\HeaderChat::firstOrCreate($payload);
-                $response = [
-                    'success' => true,
-                    'data'=> $chat,
-                    'error'=>null,
-                ];
-            }catch(Illuminate\Database\QueryExeption $e){
-                $response =[
-                    'success'=>false,
-                    'data' => null,
-                    'error'=>$e->getMessage(),
-                ];
-            }
-        }else{
-            $response = [
-                'success'=>false,
-                'error'=>'usuario no encontrado',
-            ];
-        }
-
-        return response()->json($response);
-    });
+    Route::post('/chat/create', 'HeaderChatController@store');
 
     Route::get('/users/list/', function(){
         $users = App\User::all();

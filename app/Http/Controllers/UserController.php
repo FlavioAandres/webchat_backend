@@ -35,10 +35,11 @@ class UserController extends Controller
 
     public function login(Request $request){
         $user = User::where('email',$request->email)->get()->first();
+        if ($user === null )return response()->json(['success'=>false,'error'=>'email not found']);
         $pass = \Hash::check($request->password, $user->password);
         $headers = \App\HeaderChat::where('created_by',$user->id)->orWhere('created_with',$user->id)->get();
 
-        if ($user && $pass){
+        if ($user != null && $pass){
             $token = $this->getToken($request->email,$request->password);
             $user->auth_token = $token;
             $user->save();
@@ -68,6 +69,7 @@ class UserController extends Controller
             'password'=> \Hash::make($request->password),
             'auth_token' => '',
         ];
+        // dd($data,$request->password);
         $user = new User($data);
         try{
             if($user->save()){
@@ -86,7 +88,8 @@ class UserController extends Controller
                         'id' => $user->id,
                         'auth_token'=>$user->auth_token,
                         'name'=>$user->name,
-                        'email'=>$user->email
+                        'email'=>$user->email,
+                        'avatar'=>'http://lorempixel.com/50/50',
                         ]
                     ];
                 }else{

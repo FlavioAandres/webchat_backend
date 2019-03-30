@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use App\User;
 use App\HeaderChat;
+use Pusher;
 
 class MessageController extends Controller
 {
@@ -41,6 +42,23 @@ class MessageController extends Controller
             'data' => $conversation,
         ]);
     }
+
+    public function pusherInstance(){
+        $options = array(
+        'cluster' => 'us2',
+        'useTLS' => true
+        );
+        $pusher = new Pusher(
+        'afd3371eb6832adcdd07',
+        '0b89c4dbd598fab11633',
+        '748140',
+        $options
+        );
+
+        return $pusher;
+
+    }
+
 
     public function sendMessage(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
@@ -82,6 +100,25 @@ class MessageController extends Controller
                 'error'=>$e->getMessage(),
             ];
         }
+        $pusher = $this->pusherInstance();
+
+        if($user->id === $chat->created_by){
+            $u = User::find($chat->created_with);
+            $o = User::find($chat->created_by);
+        }elseif($user->id === $chat->created_with){
+            $u =User::find($chat->created_by);
+            $o = User::find($chat->created_with);
+        }
+        if(!is_null($o)){
+            $channel = $u->email;
+        }
+        $name = $o->name;
+        $data = [
+            'type'=>'NEW_MESSAGE',
+            'id_header'=>$chat->id,
+            'name' => $name,
+        ];
+        $pusher->trigger($channel, 'my-event', $data);
 
 
         return response()->json($response);
