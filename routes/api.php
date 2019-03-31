@@ -16,8 +16,10 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::get('/get/image/{name}','ImageController@photoResponse');
 
 Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
+    Route::post('/user/profile/image','ImageController@newProfilePhoto');
     Route::post('/chat/headers/','HeaderChatController@headersResponse');
 
     Route::post('/search/users',function(Request $request){
@@ -41,14 +43,9 @@ Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
         return response()->json($response);
     });
 
-
     Route::post('/chat/user/header/', 'MessageController@conversationResponse');
-
-
     Route::post('/chat/message/send/', 'MessageController@sendMessage');
-
     Route::post('/chat/create', 'HeaderChatController@store');
-
     Route::get('/users/list/', function(){
         $users = App\User::all();
         $resp = [

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\User;
 use JWTAuth;
 use JWTAuthExeption;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -50,7 +51,7 @@ class UserController extends Controller
                     'auth_token'=>$user->auth_token,
                     'name'=>$user->name,
                     'email'=>$user->email,
-                    'avatar'=>'http://lorempixel.com/50/50',
+                    'avatar'=>"http://" . $_SERVER['HTTP_HOST'].'/api/get/image/'.$user->path,
                 ],
             ];
         }else{

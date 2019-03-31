@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\HeaderChat;
 use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use JWTAuth;
+
 use Pusher;
 
 class HeaderChatController extends Controller
@@ -62,7 +64,6 @@ class HeaderChatController extends Controller
             ];
             try{
                 $chat = HeaderChat::firstOrCreate($payload);
-                $avatar ='http://lorempixel.com/40/40/';
                 $message = '';
                 $id_header = $chat->id;
 
@@ -77,10 +78,11 @@ class HeaderChatController extends Controller
 
                 $name = $u->name;
                 $channel = $o->email;
+                $url = Storage::url($o->path);
 
                 $object = [
                     'name' =>$name,
-                    'avatar' => $avatar,
+                    'avatar' => $url,
                     'last_message' => $message,
                     'id_header' => $id_header,
                 ];
