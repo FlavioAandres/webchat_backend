@@ -22,6 +22,7 @@ Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
     Route::post('/user/profile/image','ImageController@newProfilePhoto');
     Route::post('/chat/headers/','HeaderChatController@headersResponse');
     Route::post('/chat/headers/group/','HeaderChatController@createHeaderGroup');
+    Route::post('/chat/headers/group/title/','HeaderChatController@editTitleGroup');
 
     Route::post('/search/users',function(Request $request){
         $users =  App\User::all();

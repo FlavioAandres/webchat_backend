@@ -25,6 +25,44 @@ class HeaderChatController extends Controller
         //
     }
 
+    public function editTitleGroup(Request $request){
+        $user = JWTAuth::parseToken()->authenticate();
+        $headerResponse = [];
+        #Data comes ok
+        if(!is_null($request->id_header) && !empty($request->title)){
+            try{
+                $chat = HeaderChat::find($request->id_header);
+                #Header Find
+                if(!is_null($chat)){
+                    $chat->title = $request->title;
+                    $chat->save();
+
+                    $last_message = $chat->messages()->orderBy('id','desc')->first();
+                    $last_message = is_null($last_message) ? '':$last_message->message;
+                    $recipents = $this->getMembersGroup($chat);
+                    $headerResponse = [
+                        'id_header'=>$chat->id,
+                        'name'=>$chat->title,
+                        'message'=>$last_message,
+                        'avatar'=>'https://lorempixel.com/50/50',
+                        'group'=>true,
+                        'recipents'=>$recipents,
+                    ];
+                }
+            }catch(Illuminate\Database\QueryException $e){
+                return response()->json([
+                    'success'=>false,
+                    'error'=>$e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success'=>true,
+            'data'=>$headerResponse,
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      *
@@ -81,19 +119,32 @@ class HeaderChatController extends Controller
         }catch(Illuminate\Database\QueryException $e){
             return response()->json(['success'=>false,'error'=>$e->getMessage()]);
         }
+
+        $recipents = $this->getMembersGroup($header);
+
         $headerResponse = [
             'id_header'=>$header->id,
             'name'=>$header->title,
             'message'=>'its a group',
             'avatar'=>'https://lorempixel.com/50/50',
             'group'=>true,
-            'recipents'=>$toJoin,
+            'recipents'=>$recipents,
         ];
 
         return response()->json([
             'success'=> true,
             'data'=>    $headerResponse,
-        ]);
+            ]);
+        }
+
+    private function getMembersGroup(HeaderChat $header){
+        $members = $header->groups_users;
+        $recipents = [];
+        foreach($members as $item){
+            $name = User::find($item->id_user)->name;
+            array_push($recipents, $name);
+        }
+        return $recipents;
     }
 
     public function store(Request $request){
@@ -191,10 +242,15 @@ class HeaderChatController extends Controller
         $groups = Group::where('id_user',$user->id)->get();
 
         $allheaders = [];
-        $recipents = [];
+        $int = null;
+
+        #looking for groups
+
         foreach ($groups as $group) {
+            $recipents = [];
             $newheader = HeaderChat::find($group->id_header);
             $last_message = $newheader->messages()->orderBy('id','desc')->first();
+            $last_message = is_null($last_message) ? '':$last_message->message;
 
             $int = $newheader->groups_users;
             foreach($int as $item){
@@ -202,16 +258,19 @@ class HeaderChatController extends Controller
                 array_push($recipents, $name);
             }
 
+
             $object = [
                 'name'=> $newheader->title ? $newheader->title:'Group Without name',
                 'avatar'=>'http://lorempixel.com/50/50/',
-                'last_message' => $last_message->message,
+                'last_message' => $last_message,
                 'id_header'=>$newheader->id,
                 'group'=>true,
                 'recipents'=>$recipents,
             ];
             array_push($allheaders,$object);
         }
+
+        #Searching individuals chats
 
         foreach($headers as $head){
             if(!$head->is_group){
