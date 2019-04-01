@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\HeaderChat;
 use App\User;
+use App\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use JWTAuth;
@@ -44,16 +45,58 @@ class HeaderChatController extends Controller
 
             return $pusher;
     }
-    private function createHeaderGroup(Request $request){
-        return response()->json('hola');
+    public function createHeaderGroup(Request $request){
+        $user = JWTAuth::parseToken()->authenticate();
+        if (is_null($request->users))
+            return response()->json(['success'=>false]);
+
+        $payload =[
+            'created_by'=> $user->id,
+            'is_group'=>1,
+            'title'=>'title',
+        ];
+        try{
+            $header = new HeaderChat($payload);
+            $header->save();
+
+
+            #adding user that created group
+            $ng = new Group([
+                'id_header'=>$header->id,
+                'id_user'=>$user->id,
+            ]);
+            $ng->save();
+
+            #nexts users
+            $toJoin = explode(',',$request->users);
+            foreach($toJoin as $item) {
+                $group = new Group([
+                    'id_header'=>$header->id,
+                    'id_user'=>User::find($item)->id,
+                ]);
+
+                $group->save();
+            }
+
+        }catch(Illuminate\Database\QueryException $e){
+            return response()->json(['success'=>false,'error'=>$e->getMessage()]);
+        }
+        $headerResponse = [
+            'id_header'=>$header->id,
+            'name'=>$header->title,
+            'message'=>'its a group',
+            'avatar'=>'https://lorempixel.com/50/50',
+            'group'=>true,
+            'recipents'=>$toJoin,
+        ];
+
+        return response()->json([
+            'success'=> true,
+            'data'=>    $headerResponse,
+        ]);
     }
 
-    public function store(Request $request)
-    {
-        if($request->isGroup){
-            $this->createHeaderGroup($request);
-        }
-
+    public function store(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
         $next_user = User::find($request->idUserToTalk);
         // return response()->json(['next_user'=>$next_user,'user'=>$user]);
@@ -78,7 +121,7 @@ class HeaderChatController extends Controller
 
                 $name = $u->name;
                 $channel = $o->email;
-                $url = Storage::url($o->path);
+                $url = is_null($o->path) ? 'http://lorempixel.com/50/50/':route('new_avatar',$u->path);
 
                 $object = [
                     'name' =>$name,
@@ -143,27 +186,56 @@ class HeaderChatController extends Controller
     public function headersResponse(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
         $headers = HeaderChat::where('created_by',$user->id)
-                      ->orWhere('created_with',$user->id)->get();
+            ->orWhere('created_with',$user->id)->get();
+
+        $groups = Group::where('id_user',$user->id)->get();
+
         $allheaders = [];
-        foreach($headers as $head){
-            # If user starting session is the message owner
-            if($user->id == $head->created_by){
-                $name = User::find($head->created_with)->name;
-            }elseif($user->id == $head->created_with){
-                $name = User::find($head->created_by)->name;
+        $recipents = [];
+        foreach ($groups as $group) {
+            $newheader = HeaderChat::find($group->id_header);
+            $last_message = $newheader->messages()->orderBy('id','desc')->first();
+
+            $int = $newheader->groups_users;
+            foreach($int as $item){
+                $name = User::find($item->id_user)->name;
+                array_push($recipents, $name);
             }
-            $avatar ='http://lorempixel.com/40/40/';
-            $last_message = $head->messages()->orderBy('id','desc')->first();
-            $id_header = $head->id;
-            $message = $last_message ? $last_message->message:'';
 
             $object = [
-                'name' =>$name,
-                'avatar' => $avatar,
-                'last_message' => $message,
-                'id_header' => $id_header,
+                'name'=> $newheader->title ? $newheader->title:'Group Without name',
+                'avatar'=>'http://lorempixel.com/50/50/',
+                'last_message' => $last_message->message,
+                'id_header'=>$newheader->id,
+                'group'=>true,
+                'recipents'=>$recipents,
             ];
-          array_push($allheaders,$object);
+            array_push($allheaders,$object);
+        }
+
+        foreach($headers as $head){
+            if(!$head->is_group){
+                if($user->id == $head->created_by && !is_null($head->created_with)){
+                    $u = User::find($head->created_with);
+                }elseif($user->id == $head->created_with){
+                    $u = User::find($head->created_by);
+                }
+                $name = $u->name;
+                $avatar = route('new_avatar',$u->path);
+                $last_message = $head->messages()->orderBy('id','desc')->first();
+                $id_header = $head->id;
+                $message = $last_message ? $last_message->message:'';
+
+                $object = [
+                    'name' =>$name,
+                    'avatar' => $avatar,
+                    'last_message' => $message,
+                    'id_header' => $id_header,
+                    'group'=>false,
+                    'recipents'=>null,
+                ];
+              array_push($allheaders,$object);
+            }
         }
         if(!empty($allheaders)){
             $response = [

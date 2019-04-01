@@ -32,7 +32,10 @@ class ImageController extends Controller
             $user->path = $name;
             $user->save();
         }
-        return response()->json(['success'=>true,'data'=>['avatar'=>$name]],201);
+        return response()->json([
+            'success'=>true,
+            'data'=>route('new_avatar',$name)
+            ]);
         #return response 200 o 400
     }
 }

@@ -10,6 +10,8 @@ class HeaderChat extends Model
     protected $fillable = [
         'created_by',
         'created_with',
+        'is_group',
+        'title',
     ];
 
     public function owner(){
@@ -18,6 +20,10 @@ class HeaderChat extends Model
 
     public function messages(){
         return $this->hasMany(Message::class, 'header_id','id');
+    }
+
+    public function groups_users(){
+        return $this->hasMany(Group::class,'id_header','id');
     }
 
 

@@ -23,16 +23,23 @@ class MessageController extends Controller
 
     public function conversationResponse(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
-        $messages = HeaderChat::find($request->id_header)->messages;
+        $chat = HeaderChat::find($request->id_header);
+        $messages = $chat->messages;
         $conversation = [];
         foreach ($messages as $item) {
             $own = $user->id === $item->sent_by ?
                    true:false;
+
+
+            $avatar = User::find($item->sent_by)->path;
+            $url = is_null($avatar) ? 'http://lorempixel.com/40/40':route('new_avatar',$avatar);
+
             $object= [
                 'own'=>$own,
                 'message'=>$item->message,
                 'created_at'=>$item->created_at,
                 'id'=> $item->id,
+                'avatar' => $url,
             ];
 
             array_push($conversation,$object);
@@ -73,13 +80,18 @@ class MessageController extends Controller
             $conversation = [];
             $object = [];
             foreach ($chat->messages as $item) {
-                $own = $user->id === $item->sent_by ?
-                       true:false;
+                $own = $user->id === $item->sent_by;
+                $avatar = $user->path;
+
+                $avatar = User::find($item->sent_by)->path;
+                $url = is_null($avatar) ? 'http://lorempixel.com/40/40':route('new_avatar',$avatar);
+
                 $object= [
                     'own'=>$own,
                     'message'=>$item->message,
                     'created_at'=>$item->created_at,
                     'id'=> $item->id,
+                    'avatar' => $url,
                 ];
 
                 array_push($conversation,$object);
@@ -102,21 +114,38 @@ class MessageController extends Controller
         }
         $pusher = $this->pusherInstance();
 
-        if($user->id === $chat->created_by){
-            $u = User::find($chat->created_with);
-            $o = User::find($chat->created_by);
-        }elseif($user->id === $chat->created_with){
-            $u =User::find($chat->created_by);
-            $o = User::find($chat->created_with);
+        #Find another user's email for send notification
+        $o =null;
+        if(!$chat->is_group){
+            if($user->id === $chat->created_by){
+                $o = User::find($chat->created_with);
+            }elseif(!is_null($chat->created_with ) && $user->id === $chat->created_with){
+                $o = User::find($chat->created_by);
+            }
+            if(!is_null($o)){
+                $channel = $o->email;
+                $name = $user->name;
+            }
+        }else{
+            #If is a group
+            #TODO
+            $members = $chat->groups_users;
+            $mailList = [];
+            foreach($members as $item){
+                $memObject = User::find($item->id_user);
+                array_push($mailList,$memObject->email);
+            }
+
+            $name = $chat->title;
+            $channel = $mailList;
+            #GET OTHERS AND GIVE ARRAY
         }
-        if(!is_null($o)){
-            $channel = $u->email;
-        }
-        $name = $o->name;
+
         $data = [
             'type'=>'NEW_MESSAGE',
             'id_header'=>$chat->id,
             'name' => $name,
+
         ];
         $pusher->trigger($channel, 'my-event', $data);
 

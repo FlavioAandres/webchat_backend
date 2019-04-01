@@ -16,20 +16,22 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::get('/get/image/{name}','ImageController@photoResponse');
+Route::get('/get/image/{name}','ImageController@photoResponse')->name('new_avatar');;
 
 Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
     Route::post('/user/profile/image','ImageController@newProfilePhoto');
     Route::post('/chat/headers/','HeaderChatController@headersResponse');
+    Route::post('/chat/headers/group/','HeaderChatController@createHeaderGroup');
 
     Route::post('/search/users',function(Request $request){
-        $users =  DB::table('users')->where('name','like',"%$request->userLike%")->get();
-
+        $users =  App\User::all();
         $collection = [];
         foreach ($users as $item) {
             // return response()->json(['users'=>$users]);
+            $url = is_null($item->path) ? 'http://lorempixel.com/50/50':route('new_avatar',$item->path);
             $obj = [
                 'name' => $item->name,
+                'avatar'=>$url,
                 'id' => $item->id,
             ];
             array_push($collection,$obj);
@@ -39,7 +41,6 @@ Route::group(['middleware' => ['jwtAuth','addheaders']], function () {
             'success'=>true,
             'data' => $collection,
         ];
-
         return response()->json($response);
     });
 

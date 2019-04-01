@@ -44,6 +44,7 @@ class UserController extends Controller
             $token = $this->getToken($request->email,$request->password);
             $user->auth_token = $token;
             $user->save();
+            $url_avatar = is_null($user->path) ? 'http://lorempixel.com/50/50':route('new_avatar',$user->path);
             $resp = [
                 'success'=>true,
                 'data'=>[
@@ -51,7 +52,7 @@ class UserController extends Controller
                     'auth_token'=>$user->auth_token,
                     'name'=>$user->name,
                     'email'=>$user->email,
-                    'avatar'=>"http://" . $_SERVER['HTTP_HOST'].'/api/get/image/'.$user->path,
+                    'avatar'=>$url_avatar,
                 ],
             ];
         }else{

@@ -18,7 +18,7 @@ class CreateHeaderChatsTable extends Migration
             $table->string('title')->nullable();
             $table->integer('created_by');
             $table->integer('created_with')->nullable();
-            $table->boolean('is_group')->default(false); 
+            $table->boolean('is_group')->nullable();
             $table->timestamps();
         });
     }
