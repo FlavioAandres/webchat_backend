@@ -54,7 +54,7 @@ php artisan serve
 
 First, clone the repositiory
 ```
-git clone https://github.com/codeFlavioA/webchat
+git clone https://github.com/codeFlavioA/webchat_frontend
 ```
 
 When the process has been end, change in apis/host.js  file the API HOST where the frontend application will request the data.
