@@ -172,7 +172,7 @@ class HeaderChatController extends Controller
 
                 $name = $u->name;
                 $channel = $o->email;
-                $url = is_null($o->path) ? 'http://lorempixel.com/50/50/':route('new_avatar',$u->path);
+                $url = is_null($o->path) ? 'http://lorempixel.com/50/50/':route('new_avatar',$o->path);
 
                 $object = [
                     'name' =>$name,
@@ -280,7 +280,8 @@ class HeaderChatController extends Controller
                     $u = User::find($head->created_by);
                 }
                 $name = $u->name;
-                $avatar = route('new_avatar',$u->path);
+                $url = is_null($u->path) ? 'http://lorempixel.com/50/50/':route('new_avatar',$u->path);
+                $avatar = $url;
                 $last_message = $head->messages()->orderBy('id','desc')->first();
                 $id_header = $head->id;
                 $message = $last_message ? $last_message->message:'';
